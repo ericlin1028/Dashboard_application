@@ -13,7 +13,8 @@ ui <- dashboardPage(
     sidebarMenu(
       menuItem('DataTables', tabName = 'DataTables'),
       menuItem('Plotly', tabName = 'Plotly'),
-      menuItem('Dygraph', tabName = 'Dygraph')
+      menuItem('Dygraph', tabName = 'Dygraph'),
+      menuItem('Reactive', tabName = 'Reactive')
     )
   ),
   
@@ -54,13 +55,31 @@ ui <- dashboardPage(
       ### Dygraph #####
       tabItem(tabName = 'Dygraph',
         dygraphOutput('Dygraph')
+      ),
+      ### Reactive #####
+      tabItem(tabName = 'Reactive',
+        fluidRow(
+          column(width = 6,
+            sliderInput('react_slide', label = 'rows', 
+                        min = 1, max = 150, value = 50),
+            actionButton('btn_eventReactive', 'eventReactive'),
+            tableOutput('react_table')
+          ),
+          column(width = 6,
+            actionButton('btn_observeEvent', 'observeEvent'),
+            tabsetPanel(id = 'react_tabset',
+              tabPanel('1'),
+              tabPanel('2')
+            )
+          )
+        )
       )
     )
   )
 )
 
 ### ~~~~~server~~~~~ #####
-server <- function(input, output) {
+server <- function(input, output, session) {
   ### tab_DataTables #####
   output$DT <- renderDataTable(
     datatable(iris, 
@@ -85,6 +104,16 @@ server <- function(input, output) {
   ### Dygraph #####
   output$Dygraph <- renderDygraph({
     dygraph(AirPassengers) %>% dyRangeSelector()
+  })
+  ### Reactive #####
+  dat <- eventReactive(input$btn_eventReactive, {
+    head(iris, input$react_slide)
+  })
+  output$react_table <- renderTable({
+    dat()
+  })
+  observeEvent(input$btn_observeEvent, {
+    updateTabsetPanel(session, 'react_tabset', selected = '2')
   })
 }
 
