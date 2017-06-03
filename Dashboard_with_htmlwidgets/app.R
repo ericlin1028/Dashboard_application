@@ -1,19 +1,23 @@
 library(shiny)
 library(shinydashboard)
 library(DT)
+library(plotly)
+library(dygraphs)
 
 ### ~~~~~ui~~~~~ #####
 ui <- dashboardPage(
   dashboardHeader(title = 'htmlwidgets'),
   
-  ### ---Sidebar--- #####
+  ### +++Sidebar--- #####
   dashboardSidebar(
     sidebarMenu(
-      menuItem('DataTables', tabName = 'DataTables')
+      menuItem('DataTables', tabName = 'DataTables'),
+      menuItem('Plotly', tabName = 'Plotly'),
+      menuItem('Dygraph', tabName = 'Dygraph')
     )
   ),
   
-  ### ---Body--- #####
+  ### +++Body--- #####
   dashboardBody(
     tabItems(
       ### DataTables #####
@@ -35,6 +39,21 @@ ui <- dashboardPage(
           )
         ),
         dataTableOutput('DT')
+      ),
+      ### Plotly #####
+      tabItem(tabName = 'Plotly',
+        tabsetPanel(
+          tabPanel(title = 'base',
+            plotlyOutput('plotly_base')
+          ),
+          tabPanel(title = 'with_ggplot',
+                   plotlyOutput('plotly_with_ggplot')
+          )
+        )
+      ),
+      ### Dygraph #####
+      tabItem(tabName = 'Dygraph',
+        dygraphOutput('Dygraph')
       )
     )
   )
@@ -49,9 +68,24 @@ server <- function(input, output) {
               caption = 'This is caption'[input$DT_caption], 
               filter = if(input$DT_filter) 'top' else 'none')
   )
+  
   output$DT_selected_row <- renderText(
     paste('selected :', paste(input$DT_rows_selected, collapse = ' '))
   )
+  ### tab_Plotly #####
+  output$plotly_base <- renderPlotly({
+    iris %>% plot_ly(x = ~Sepal.Length, y = ~Sepal.Width, color = ~Species)
+  })
+  
+  output$plotly_with_ggplot <- renderPlotly({
+    p <- iris %>% ggplot(aes(Sepal.Length, Sepal.Width, color = Species)) +
+      geom_point() 
+    ggplotly(p)
+  })
+  ### Dygraph #####
+  output$Dygraph <- renderDygraph({
+    dygraph(AirPassengers) %>% dyRangeSelector()
+  })
 }
 
 shinyApp(ui, server)
